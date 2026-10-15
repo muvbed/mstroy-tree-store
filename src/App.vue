@@ -6,5 +6,3 @@ import ItemsTable from "@/components/ItemsTable.vue";
   <h1>MStroy тестовое задание</h1>
   <ItemsTable />
 </template>
-
-<style scoped></style>

@@ -1,8 +1,8 @@
-import type { TreeItem, ItemId } from "@/types/items";
+import type { TreeItem, ItemId } from "../types/items";
 
 export class TreeStore<T extends TreeItem = TreeItem> {
   private itemsById = new Map<ItemId, T>();
-  private childrenById = new Map<ItemId, T[]>();
+  private childrenById = new Map<ItemId, Set<T>>();
 
   constructor(items: T[] = []) {
     this.setItems(items);
@@ -17,14 +17,14 @@ export class TreeStore<T extends TreeItem = TreeItem> {
   }
 
   getChildren(id: ItemId): T[] {
-    return this.childrenById.get(id) ?? [];
+    return Array.from(this.childrenById.get(id) ?? []);
   }
 
   getAllChildren(id: ItemId): T[] {
-    const result = [...this.getChildren(id)];
+    const result = this.getChildren(id);
 
     for (let i = 0; i < result.length; i++) {
-      for (const child of this.getChildren(result[i]!.id)) {
+      for (const child of this.childrenById.get(result[i]!.id) ?? []) {
         result.push(child);
       }
     }
@@ -54,8 +54,16 @@ export class TreeStore<T extends TreeItem = TreeItem> {
   }
 
   addItem(item: T): void {
+    const prev = this.itemsById.get(item.id);
+
+    if (prev) this.unlinkFromParent(prev);
+
     this.itemsById.set(item.id, item);
-    this.linkToParent(item);
+
+    if (item.parent === null) return;
+
+    const siblings = this.childrenById.get(item.parent) ?? new Set<T>();
+    this.childrenById.set(item.parent, siblings.add(item));
   }
 
   removeItem(id: ItemId): void {
@@ -72,34 +80,10 @@ export class TreeStore<T extends TreeItem = TreeItem> {
   }
 
   updateItem(item: T): void {
-    const prev = this.itemsById.get(item.id);
-
-    if (!prev) return;
-
-    this.unlinkFromParent(prev);
-    this.addItem(item);
-  }
-
-  private linkToParent(item: T): void {
-    if (item.parent === null) return;
-
-    const siblings = this.childrenById.get(item.parent);
-
-    if (siblings) {
-      siblings.push(item);
-    } else {
-      this.childrenById.set(item.parent, [item]);
-    }
+    if (this.itemsById.has(item.id)) this.addItem(item);
   }
 
   private unlinkFromParent(item: T): void {
-    if (item.parent === null) return;
-
-    const siblings = this.childrenById.get(item.parent) ?? [];
-
-    this.childrenById.set(
-      item.parent,
-      siblings.filter((child) => child !== item),
-    );
+    if (item.parent !== null) this.childrenById.get(item.parent)?.delete(item);
   }
 }

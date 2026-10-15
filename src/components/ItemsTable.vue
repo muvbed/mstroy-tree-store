@@ -4,7 +4,7 @@ import { AgGridVue } from "ag-grid-vue3";
 import type { ColDef, GetRowIdFunc, ModelUpdatedEvent } from "ag-grid-community";
 import type { Item } from "@/types/items";
 
-const { tree, items, isLoading } = useItems();
+const { tree, items, isLoading, error } = useItems();
 
 const isGroup = (item?: Item) => !!item && tree.value.getChildren(item.id).length > 0;
 
@@ -32,6 +32,7 @@ const refreshRowNumbers = ({ api }: ModelUpdatedEvent<Item>) =>
 </script>
 
 <template>
+  <p v-if="error">{{ error }}</p>
   <ag-grid-vue
     :rowData="items"
     :loading="isLoading"
