@@ -1,11 +1,13 @@
-import { ref } from "vue";
+import { reactive, computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { getData } from "@/api/http";
 import { validateItems } from "@/utils/validators";
-import { type Item } from "@/types/items";
+import { TreeStore } from "@/utils/TreeStore";
+import type { Item } from "@/types/items";
 
 export const useItemsStore = defineStore("items", () => {
-  const items = ref<Item[]>([]);
+  const tree = reactive(new TreeStore<Item>([]));
+  const items = computed(() => tree.getAll());
   const isLoading = ref(true);
   const error = ref<string | null>(null);
 
@@ -22,11 +24,11 @@ export const useItemsStore = defineStore("items", () => {
     isLoading.value = false;
 
     if (result.data) {
-      items.value = result.data;
+      tree.setItems(result.data);
     } else if (result.error) {
       error.value = result.error;
     }
   };
 
-  return { items, isLoading, error, fetchItems };
+  return { tree, items, isLoading, error, fetchItems };
 });
