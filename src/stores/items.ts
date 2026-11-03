@@ -2,11 +2,11 @@ import { reactive, computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { getData } from "@/api/http";
 import { validateItems } from "@/utils/validators";
-import { TreeStore } from "@/utils/TreeStore";
-import type { Item } from "@/types/items";
+import { HistoryTreeStore } from "@/utils/HistoryTreeStore";
+import type { Item, ItemId } from "@/types/items";
 
 export const useItemsStore = defineStore("items", () => {
-  const tree = reactive(new TreeStore<Item>([]));
+  const tree = reactive(new HistoryTreeStore<Item>());
   const items = computed(() => tree.getAll());
   const isLoading = ref(true);
   const error = ref<string | null>(null);
@@ -15,7 +15,7 @@ export const useItemsStore = defineStore("items", () => {
     isLoading.value = true;
     error.value = null;
 
-    await new Promise((resolve) => setTimeout(() => resolve(null), 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const result = await getData("/items.json", validateItems, signal);
 
@@ -30,5 +30,16 @@ export const useItemsStore = defineStore("items", () => {
     }
   };
 
-  return { tree, items, isLoading, error, fetchItems };
+  const nextId = () =>
+    items.value.reduce((max, { id }) => Math.max(max, Number(id) || 0), 0) + 1;
+
+  const addItem = (parent: ItemId) => {
+    const id = nextId();
+
+    tree.addItem({ id, parent, label: `Айтем ${id}` });
+  };
+
+  const removeItem = (id: ItemId) => tree.removeItem(id);
+
+  return { tree, items, isLoading, error, fetchItems, addItem, removeItem };
 });

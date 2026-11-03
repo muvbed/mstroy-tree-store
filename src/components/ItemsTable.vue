@@ -2,11 +2,21 @@
 import { useItems } from "@/composables/useItems";
 import { AgGridVue } from "ag-grid-vue3";
 import type { ColDef, GetRowIdFunc, ModelUpdatedEvent } from "ag-grid-community";
+import ItemActions, { type ItemActionsParams } from "@/components/ItemActions.vue";
 import type { Item } from "@/types/items";
 
-const { tree, items, isLoading, error } = useItems();
+const { tree, items, isLoading, error, addItem, removeItem } = useItems();
 
 const isGroup = (item?: Item) => !!item && tree.value.getChildren(item.id).length > 0;
+
+const actionsParams: ItemActionsParams = {
+  onAdd: ({ id }, node) => {
+    addItem(id);
+
+    if (node.group) node.setExpanded(true);
+  },
+  onRemove: ({ id }) => removeItem(id),
+};
 
 const columnDefs: ColDef<Item>[] = [
   {
@@ -22,7 +32,11 @@ const columnDefs: ColDef<Item>[] = [
 const autoGroupColumnDef: ColDef<Item> = {
   headerName: "Категория",
   valueGetter: ({ data }) => (isGroup(data) ? "Группа" : "Элемент"),
-  cellRendererParams: { suppressCount: true },
+  cellRendererParams: {
+    suppressCount: true,
+    innerRenderer: ItemActions,
+    ...actionsParams,
+  },
   flex: 1,
 };
 
@@ -33,6 +47,10 @@ const refreshRowNumbers = ({ api }: ModelUpdatedEvent<Item>) =>
 
 <template>
   <p v-if="error">{{ error }}</p>
+  <div class="history">
+    <button title="Назад" :disabled="!tree.canUndo" @click="tree.undo()">←</button>
+    <button title="Вперед" :disabled="!tree.canRedo" @click="tree.redo()">→</button>
+  </div>
   <ag-grid-vue
     :rowData="items"
     :loading="isLoading"
@@ -46,3 +64,24 @@ const refreshRowNumbers = ({ api }: ModelUpdatedEvent<Item>) =>
     @model-updated="refreshRowNumbers"
   />
 </template>
+
+<style scoped>
+.history {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+:deep(.item-category) {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+:deep(.item-category button) {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  cursor: pointer;
+}
+</style>

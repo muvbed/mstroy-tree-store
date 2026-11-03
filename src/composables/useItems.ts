@@ -9,5 +9,9 @@ export const useItems = () => {
   onMounted(() => store.fetchItems(controller.signal));
   onUnmounted(() => controller.abort());
 
-  return storeToRefs(store);
+  return {
+    ...storeToRefs(store),
+    addItem: store.addItem,
+    removeItem: store.removeItem,
+  };
 };

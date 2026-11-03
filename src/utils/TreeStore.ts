@@ -63,6 +63,7 @@ export class TreeStore<T extends TreeItem = TreeItem> {
     if (item.parent === null) return;
 
     const siblings = this.childrenById.get(item.parent) ?? new Set<T>();
+
     this.childrenById.set(item.parent, siblings.add(item));
   }
 
