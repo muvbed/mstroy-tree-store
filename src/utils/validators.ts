@@ -1,4 +1,4 @@
-import type { Item, ItemId } from "@/types/items";
+import type { Item, ItemId } from "../types/items";
 
 export const isItemId = (value: unknown): value is ItemId =>
   typeof value === "number" || typeof value === "string";

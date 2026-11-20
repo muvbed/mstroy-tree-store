@@ -48,8 +48,12 @@ const refreshRowNumbers = ({ api }: ModelUpdatedEvent<Item>) =>
 <template>
   <p v-if="error">{{ error }}</p>
   <div class="history">
-    <button title="Назад" :disabled="!tree.canUndo" @click="tree.undo()">←</button>
-    <button title="Вперед" :disabled="!tree.canRedo" @click="tree.redo()">→</button>
+    <button title="Назад" :disabled="isLoading || !tree.canUndo" @click="tree.undo()">
+      ←
+    </button>
+    <button title="Вперед" :disabled="isLoading || !tree.canRedo" @click="tree.redo()">
+      →
+    </button>
   </div>
   <ag-grid-vue
     :rowData="items"

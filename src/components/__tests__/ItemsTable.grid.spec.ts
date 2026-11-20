@@ -15,6 +15,10 @@ import { TreeDataModule } from "ag-grid-enterprise";
 import ItemsTable from "@/components/ItemsTable.vue";
 import type { Item } from "@/types/items";
 
+const { NEW_ID } = vi.hoisted(() => ({ NEW_ID: "019a0000-0000-7000-8000-000000000005" }));
+
+vi.mock("uuid", () => ({ v7: () => NEW_ID }));
+
 const items: Item[] = [
   { id: 1, parent: null, label: "Айтем 1" },
   { id: "91064cef", parent: 1, label: "Айтем 2" },
@@ -90,7 +94,7 @@ describe("ItemsTable с AG Grid", () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: true, json: async () => items }),
+      vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(items) }),
     );
 
     wrapper = mount(ItemsTable, {
@@ -115,9 +119,9 @@ describe("ItemsTable с AG Grid", () => {
 
     await click("3", ADD);
 
-    const added = api.getRowNode("5");
+    const added = api.getRowNode(NEW_ID);
 
-    expect(added?.data).toEqual({ id: 5, parent: 3, label: "Айтем 5" });
+    expect(added?.data).toEqual({ id: NEW_ID, parent: 3, label: "Новый элемент" });
     expect(added?.parent?.id).toBe("3");
     expect(added?.displayed).toBe(true);
     expect(api.getRowNode("3")?.expanded).toBe(true);
@@ -129,7 +133,7 @@ describe("ItemsTable с AG Grid", () => {
     await click("91064cef", ADD);
 
     expect(api.getRowNode("91064cef")?.expanded).toBe(true);
-    expect(api.getRowNode("5")?.displayed).toBe(true);
+    expect(api.getRowNode(NEW_ID)?.displayed).toBe(true);
   });
 
   it("«✕» удаляет строку вместе с потомками", async () => {
@@ -166,13 +170,13 @@ describe("ItemsTable с AG Grid", () => {
     await click("3", ADD);
     await clickHistory("Назад");
 
-    expect(api.getRowNode("5")).toBeUndefined();
+    expect(api.getRowNode(NEW_ID)).toBeUndefined();
     expect(api.getRowNode("91064cef")?.expanded).toBe(false);
     expect(api.getRowNode("1")?.expanded).toBe(true);
 
     await clickHistory("Вперед");
 
-    expect(api.getRowNode("5")?.displayed).toBe(true);
+    expect(api.getRowNode(NEW_ID)?.displayed).toBe(true);
     expect(api.getRowNode("91064cef")?.expanded).toBe(false);
     expect(api.getRowNode("1")?.expanded).toBe(true);
   });

@@ -32,3 +32,18 @@ export const getData = async <T>(
     };
   }
 };
+
+export const sendData = async (
+  url: string,
+  init: RequestInit,
+): Promise<string | null> => {
+  try {
+    const response = await fetch(url, init);
+
+    return response.ok ? null : `Ошибка HTTP ${response.status}`;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    return `Ошибка при выполнении запроса: ${errorMessage}`;
+  }
+};

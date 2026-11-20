@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { computed, reactive } from "vue";
 import { HistoryTreeStore } from "@/utils/HistoryTreeStore";
 import { TreeStore } from "@/utils/TreeStore";
@@ -96,5 +96,29 @@ describe("HistoryTreeStore", () => {
     tree.undo();
     expect(count.value).toBe(items.length);
     expect(canUndo.value).toBe(false);
+  });
+
+  it("сообщает слушателю об изменениях, кроме загрузки", () => {
+    const onAdd = vi.fn();
+    const onRemove = vi.fn();
+    const tree = new HistoryTreeStore<Item>({ onAdd, onRemove });
+
+    tree.setItems(items);
+    expect(onAdd).not.toHaveBeenCalled();
+
+    tree.addItem(item);
+    expect(onAdd).toHaveBeenLastCalledWith([item]);
+
+    tree.undo();
+    expect(onRemove).toHaveBeenLastCalledWith(item.id);
+
+    tree.removeItem("91064cef");
+    expect(onRemove).toHaveBeenLastCalledWith("91064cef");
+
+    tree.undo();
+    expect(onAdd).toHaveBeenLastCalledWith([items[1], items[3], items[4]]);
+
+    tree.redo();
+    expect(onRemove).toHaveBeenLastCalledWith("91064cef");
   });
 });

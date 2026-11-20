@@ -1,12 +1,37 @@
 import { reactive, computed, ref } from "vue";
+import { v7 as uuidv7 } from "uuid";
 import { defineStore } from "pinia";
-import { getData } from "@/api/http";
-import { validateItems } from "@/utils/validators";
+import { createItems, deleteItem, fetchItems as loadItems } from "@/api/items";
 import { HistoryTreeStore } from "@/utils/HistoryTreeStore";
 import type { Item, ItemId } from "@/types/items";
 
 export const useItemsStore = defineStore("items", () => {
-  const tree = reactive(new HistoryTreeStore<Item>());
+  let queue: Promise<unknown> = Promise.resolve();
+  let version = 0;
+
+  const send = (request: () => Promise<string | null>) => {
+    const sentVersion = version;
+
+    queue = queue.then(async () => {
+      if (sentVersion !== version) return;
+
+      const message = await request();
+
+      if (!message) return;
+
+      version++;
+      await fetchItems();
+      error.value ??= `Не удалось сохранить изменения (${message}). Показаны данные с сервера.`;
+    });
+  };
+
+  const tree = reactive(
+    new HistoryTreeStore<Item>({
+      onAdd: (added) => send(() => createItems(added)),
+      onRemove: (id) => send(() => deleteItem(id)),
+    }),
+  );
+
   const items = computed(() => tree.getAll());
   const isLoading = ref(true);
   const error = ref<string | null>(null);
@@ -17,7 +42,7 @@ export const useItemsStore = defineStore("items", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const result = await getData("/items.json", validateItems, signal);
+    const result = await loadItems(signal);
 
     if (signal?.aborted) return;
 
@@ -30,16 +55,19 @@ export const useItemsStore = defineStore("items", () => {
     }
   };
 
-  const nextId = () =>
-    items.value.reduce((max, { id }) => Math.max(max, Number(id) || 0), 0) + 1;
-
   const addItem = (parent: ItemId) => {
-    const id = nextId();
+    if (isLoading.value) return;
 
-    tree.addItem({ id, parent, label: `Айтем ${id}` });
+    const id = uuidv7();
+
+    tree.addItem({ id, parent, label: "Новый элемент" });
   };
 
-  const removeItem = (id: ItemId) => tree.removeItem(id);
+  const removeItem = (id: ItemId) => {
+    if (isLoading.value) return;
+
+    tree.removeItem(id);
+  };
 
   return { tree, items, isLoading, error, fetchItems, addItem, removeItem };
 });

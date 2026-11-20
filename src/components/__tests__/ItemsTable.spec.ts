@@ -13,7 +13,7 @@ describe("ItemsTable", () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: true, json: async () => items }),
+      vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(items) }),
     );
 
     const wrapper = mount(ItemsTable, {

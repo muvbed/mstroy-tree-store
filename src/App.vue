@@ -3,6 +3,6 @@ import ItemsTable from "@/components/ItemsTable.vue";
 </script>
 
 <template>
-  <h1>MStroy тестовое задание</h1>
+  <h1>MStroy</h1>
   <ItemsTable />
 </template>
